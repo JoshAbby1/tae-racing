@@ -5,47 +5,174 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TAE RACING</title>
 <style>
-body { margin:0; overflow:hidden; background:#111; font-family:sans-serif; }
-#player { position:absolute; width:50px; height:100px; background:red; bottom:50px; left:50%; transform:translateX(-50%);}
-.enemy { position:absolute; width:50px; height:100px; background:blue; top:-120px;}
-#title { position:fixed; top:10px; width:100%; text-align:center; color:white; font-size:24px; font-weight:bold;}
+body { margin:0; overflow:hidden; font-family:sans-serif; background:#333;}
+#road {
+  position:relative;
+  width:100%;
+  height:100vh;
+  background: linear-gradient(#555 0%, #777 50%, #555 100%);
+  overflow:hidden;
+}
+#player {
+  position:absolute;
+  bottom:50px;
+  left:50%;
+  transform:translateX(-50%);
+  width:60px;
+  height:120px;
+  transition:left 0.1s, bottom 0.1s;
+  z-index:10;
+}
+.enemy {
+  position:absolute;
+  width:60px;
+  height:120px;
+  z-index:5;
+}
+.ramp {
+  position:absolute;
+  width:80px;
+  height:40px;
+  z-index:6;
+}
+#score {
+  position:fixed;
+  top:10px;
+  left:10px;
+  color:white;
+  font-size:24px;
+  font-weight:bold;
+  z-index:20;
+}
+.controls {
+  position:fixed;
+  bottom:20px;
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  gap:20px;
+  z-index:20;
+}
+.btn {
+  width:80px; height:60px;
+  background:rgba(255,255,255,0.2);
+  display:flex;
+  align-items:center; justify-content:center;
+  font-size:32px; font-weight:bold;
+  border-radius:12px;
+  user-select:none;
+}
 </style>
 </head>
 <body>
-<div id="title">TAE RACING</div>
-<div id="player"></div>
+<div id="road">
+  <img id="player" src="https://i.ibb.co/VVj3rYZ/player-car.png" alt="player">
+</div>
+<div id="score">Score: <span id="scoreVal">0</span></div>
+<div class="controls">
+  <div id="leftBtn" class="btn">◀</div>
+  <div id="rightBtn" class="btn">▶</div>
+</div>
 <script>
+const road = document.getElementById('road');
 const player = document.getElementById('player');
-const enemies = [];
-let lane = 1;
-const lanes = [50, 150, 250];
-let speed = 5;
+const scoreEl = document.getElementById('scoreVal');
+const leftBtn = document.getElementById('leftBtn');
+const rightBtn = document.getElementById('rightBtn');
+
+const lanes = [0.2,0.5,0.8]; // fraction of road width
+let laneIndex = 1;
+player.style.left = road.clientWidth*lanes[laneIndex]-30+'px'; // initial
+
+// Controls
+function moveLeft(){ laneIndex=Math.max(0,laneIndex-1); updatePlayer(); }
+function moveRight(){ laneIndex=Math.min(2,laneIndex+1); updatePlayer(); }
+function updatePlayer(){ player.style.left = road.clientWidth*lanes[laneIndex]-30+'px'; }
+
 document.addEventListener('keydown', e=>{
-if(e.key==='ArrowLeft') lane=Math.max(0,lane-1);
-if(e.key==='ArrowRight') lane=Math.min(2,lane+1);
-player.style.left = lanes[lane]+'px';
+  if(e.key==='ArrowLeft') moveLeft();
+  if(e.key==='ArrowRight') moveRight();
 });
+leftBtn.addEventListener('touchstart', moveLeft);
+rightBtn.addEventListener('touchstart', moveRight);
+
+// Game variables
+let enemies = [];
+let ramps = [];
+let score=0;
+let speed=4;
+let jump=false;
+let jumpTimer=0;
+
+// Spawn enemies
 function spawnEnemy(){
-  const e = document.createElement('div');
+  const e = document.createElement('img');
+  e.src='https://i.ibb.co/4Vb3K3B/enemy-car.png';
   e.className='enemy';
-  e.style.left = lanes[Math.floor(Math.random()*3)]+'px';
-  document.body.appendChild(e);
+  const lane = lanes[Math.floor(Math.random()*lanes.length)];
+  e.style.left = road.clientWidth*lane-30+'px';
+  e.style.top = '-140px';
+  road.appendChild(e);
   enemies.push(e);
 }
-setInterval(spawnEnemy,1000);
+
+// Spawn ramps
+function spawnRamp(){
+  const r = document.createElement('img');
+  r.src='https://i.ibb.co/QdN3VvB/ramp.png';
+  r.className='ramp';
+  const lane = lanes[Math.floor(Math.random()*lanes.length)];
+  r.style.left = road.clientWidth*lane-40+'px';
+  r.style.top = '-60px';
+  road.appendChild(r);
+  ramps.push(r);
+}
+
+// Collision
+function collides(a,b){
+  const ar = a.getBoundingClientRect();
+  const br = b.getBoundingClientRect();
+  return !(br.right<ar.left || br.left>ar.right || br.bottom<ar.top || br.top>ar.bottom);
+}
+
+// Game loop
 function loop(){
-  enemies.forEach((e,i)=>{
-    e.style.top = (e.offsetTop + speed) + 'px';
-    const pRect = player.getBoundingClientRect();
-    const eRect = e.getBoundingClientRect();
-    if(!(eRect.right<pRect.left || eRect.left>pRect.right || eRect.bottom<pRect.top || eRect.top>pRect.bottom)){
-      alert('💥 Crash! TAE RACING over.');
-      window.location.reload();
+  // Spawn
+  if(Math.random()<0.02) spawnEnemy();
+  if(Math.random()<0.01) spawnRamp();
+
+  // Move enemies
+  for(let i=enemies.length-1;i>=0;i--){
+    const e = enemies[i];
+    e.style.top = (e.offsetTop+speed)+'px';
+    if(!jump && collides(player,e)){
+      alert('💥 Crash! TAE RACING over. Score: '+score);
+      location.reload();
     }
-    if(e.offsetTop>window.innerHeight){ e.remove(); enemies.splice(i,1);}
-  });
+    if(e.offsetTop>road.clientHeight){ e.remove(); enemies.splice(i,1); score++; scoreEl.textContent=score; }
+  }
+
+  // Move ramps
+  for(let i=ramps.length-1;i>=0;i--){
+    const r = ramps[i];
+    r.style.top = (r.offsetTop+speed)+'px';
+    if(collides(player,r) && !jump){
+      jump=true;
+      jumpTimer=0;
+    }
+    if(r.offsetTop>road.clientHeight){ r.remove(); ramps.splice(i,1); }
+  }
+
+  // Jump logic
+  if(jump){
+    jumpTimer++;
+    player.style.bottom = 50+Math.sin(jumpTimer/10)*100+'px';
+    if(jumpTimer>20){ jump=false; player.style.bottom='50px'; }
+  }
+
   requestAnimationFrame(loop);
 }
+
 loop();
 </script>
 </body>
