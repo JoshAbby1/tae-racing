@@ -66,7 +66,7 @@ body { margin:0; overflow:hidden; font-family:sans-serif; background:#333;}
 </head>
 <body>
 <div id="road">
-  <img id="player" src="https://i.ibb.co/VVj3rYZ/player-car.png" alt="player">
+  <img id="player" src="player-car.png" alt="player">
 </div>
 <div id="score">Score: <span id="scoreVal">0</span></div>
 <div class="controls">
@@ -82,7 +82,7 @@ const rightBtn = document.getElementById('rightBtn');
 
 const lanes = [0.2,0.5,0.8]; // fraction of road width
 let laneIndex = 1;
-player.style.left = road.clientWidth*lanes[laneIndex]-30+'px'; // initial
+player.style.left = road.clientWidth*lanes[laneIndex]-30+'px';
 
 // Controls
 function moveLeft(){ laneIndex=Math.max(0,laneIndex-1); updatePlayer(); }
@@ -107,7 +107,7 @@ let jumpTimer=0;
 // Spawn enemies
 function spawnEnemy(){
   const e = document.createElement('img');
-  e.src='https://i.ibb.co/4Vb3K3B/enemy-car.png';
+  e.src='enemy-car.png';
   e.className='enemy';
   const lane = lanes[Math.floor(Math.random()*lanes.length)];
   e.style.left = road.clientWidth*lane-30+'px';
@@ -119,7 +119,7 @@ function spawnEnemy(){
 // Spawn ramps
 function spawnRamp(){
   const r = document.createElement('img');
-  r.src='https://i.ibb.co/QdN3VvB/ramp.png';
+  r.src='ramp.png';
   r.className='ramp';
   const lane = lanes[Math.floor(Math.random()*lanes.length)];
   r.style.left = road.clientWidth*lane-40+'px';
@@ -137,7 +137,6 @@ function collides(a,b){
 
 // Game loop
 function loop(){
-  // Spawn
   if(Math.random()<0.02) spawnEnemy();
   if(Math.random()<0.01) spawnRamp();
 
