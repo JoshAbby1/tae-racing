@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TAE RACING</title>
+<style>
+body { margin:0; overflow:hidden; background:#111; font-family:sans-serif; }
+#player { position:absolute; width:50px; height:100px; background:red; bottom:50px; left:50%; transform:translateX(-50%);}
+.enemy { position:absolute; width:50px; height:100px; background:blue; top:-120px;}
+#title { position:fixed; top:10px; width:100%; text-align:center; color:white; font-size:24px; font-weight:bold;}
+</style>
+</head>
+<body>
+<div id="title">TAE RACING</div>
+<div id="player"></div>
+<script>
+const player = document.getElementById('player');
+const enemies = [];
+let lane = 1;
+const lanes = [50, 150, 250];
+let speed = 5;
+document.addEventListener('keydown', e=>{
+if(e.key==='ArrowLeft') lane=Math.max(0,lane-1);
+if(e.key==='ArrowRight') lane=Math.min(2,lane+1);
+player.style.left = lanes[lane]+'px';
+});
+function spawnEnemy(){
+  const e = document.createElement('div');
+  e.className='enemy';
+  e.style.left = lanes[Math.floor(Math.random()*3)]+'px';
+  document.body.appendChild(e);
+  enemies.push(e);
+}
+setInterval(spawnEnemy,1000);
+function loop(){
+  enemies.forEach((e,i)=>{
+    e.style.top = (e.offsetTop + speed) + 'px';
+    const pRect = player.getBoundingClientRect();
+    const eRect = e.getBoundingClientRect();
+    if(!(eRect.right<pRect.left || eRect.left>pRect.right || eRect.bottom<pRect.top || eRect.top>pRect.bottom)){
+      alert('💥 Crash! TAE RACING over.');
+      window.location.reload();
+    }
+    if(e.offsetTop>window.innerHeight){ e.remove(); enemies.splice(i,1);}
+  });
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
